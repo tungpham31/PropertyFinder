@@ -12,6 +12,7 @@ import React, {useState} from 'react';
 //import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import SearchResults from './SearchResults.js'
 
 import {
   SafeAreaView,
@@ -23,6 +24,7 @@ import {
   TextInput,
   Image,
   Button,
+  ActivityIndicator,
 } from 'react-native';
 
 import {
@@ -35,13 +37,45 @@ import {
 
 const Stack = createStackNavigator();
 
-const SearchPage = () => {
+function urlForQueryAndPage(key, value, pageNumber) {
+  const data = {
+      country: 'uk',
+      pretty: '1',
+      encoding: 'json',
+      listing_type: 'buy',
+      action: 'search_listings',
+      page: pageNumber,
+  };
+  data[key] = value;
+
+  const querystring = Object.keys(data)
+    .map(key => key + '=' + encodeURIComponent(data[key]))
+    .join('&');
+
+  return 'http://facebook.github.io/react-native/movies.json';
+ // return 'http://api.nestoria.co.uk/api?' + querystring;
+ // return 'http://api.nestoria.co.uk/api?country=uk&pretty=1&action=metadata&place_name=Clapham&price_type=fixed&encoding=json';
+}
+
+const SearchPage = ({ navigation }) => {
   const [searchText, setSearchText] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   let textInput;
 
   const onTextInputSubmitted = (textInput) => {
-    console.log(searchText);
+    const query = urlForQueryAndPage('place_name', searchText, 1);
+    const successCallback = response => {
+      const listings = [
+        {price: '3,000,000', address: 'Nile Street, London N1'},
+        {price: '575,000', address: 'Milner Square, London N1'},
+      ];
+      navigation.navigate('SearchResults', {listings: listings});
+    }
+    setIsLoading(true);
+    fetch(query)
+      .then(successCallback)
+      .catch(error => console.error(error))
+      .then(() => setIsLoading(false));
     textInput.clear();
   }
 
@@ -69,6 +103,7 @@ const SearchPage = () => {
         />
       </View>
       <Image source={require('./Resources/house.png')} style={styles.image}/>
+      {isLoading && <ActivityIndicator size='large'/>}
     </View>
   );
 }
@@ -81,6 +116,11 @@ const App: () => React$Node = () => {
           name="Home"
           component={SearchPage}
           options={{ title: 'Property Finder' }}
+        />
+        <Stack.Screen
+          name="SearchResults"
+          component={SearchResults}
+          options={{ title: 'Search Results'}}
         />
       </Stack.Navigator>
     </NavigationContainer>
